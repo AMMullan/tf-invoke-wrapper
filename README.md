@@ -24,16 +24,19 @@ By default, the configuration is stored in YAML, with the name **tasks.yaml** (J
 
 Sample YAML:
 ```yaml
-'terraform':
-  assume_role_arn: arn:aws:iam::123456789012:role/terraform
+terraform:
+  assume_role_arn: 'arn:aws:iam::123456789012:role/terraform'
 
-'terraform/123456789012':
-  assume_role_arn: arn:aws:iam::123456789012:role/terraform
-'terraform/123456789012/eu-west-1/production':
+terraform/123456789012:
+  assume_role_arn: 'arn:aws:iam::123456789012:role/terraform'
+terraform/123456789012/eu-west-1/production:
   backend_path: '${path}/parameters/backend.tfvars'
   vars_file: '${path}/parameters/production.tfvars'
+terraform/123456789012/eu-west-1/development:
+  assume_role_arn: 'arn:aws:iam::123456789012:role/terraform-production'
+  backend_path: '${path}/parameters/backend.tfvars'
 
-'terraform/234567890123/infront/':
+terraform/234567890123/infront/:
   environments:
     production:
         assume_role_arn: arn:aws:iam::234567890123:role/terraform-prod
