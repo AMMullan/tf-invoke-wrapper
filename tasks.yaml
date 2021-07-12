@@ -1,0 +1,19 @@
+terraform:
+  assume_role_arn: 'test'
+
+terraform/123456789012:
+  assume_role_arn: 'arn:aws:iam::123456789012:role/terraform'
+terraform/123456789012/eu-west-1/production:
+  assume_role_arn: 'arn:aws:iam::012177264511:role/terraform-gs'
+  backend_config: '${path}/parameters/backend.tfvars'
+  var_file: '${path}/parameters/production.tfvars'
+terraform/123456789012/eu-west-1/uat:
+  backend_config: '${path}/parameters/backend.tfvars'
+  var_file: '${path}/parameters/uat.tfvars'
+
+terraform/234567890123/myapp:
+  environments:
+    production:
+        assume_role_arn: 'arn:aws:iam::123456789012:role/terraform-prod'
+        parameters: '${path}/parameters/production/production.tfvars'
+        backend_config: '${path}/parameters/production/backend.tfvars'
