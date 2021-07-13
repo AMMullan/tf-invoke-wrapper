@@ -99,8 +99,12 @@ def configure_task(context):
         )
         return_config['assume_role_arn'] = assume_role_arn
 
-    return_config['backend_config'] = backend_config.replace('${path}', terraform_path)
-    return_config['var_file'] = var_file.replace('${path}', terraform_path)
+    if backend_config:
+        return_config['backend_config'] = backend_config.replace('${path}', terraform_path)
+
+    if var_file:
+        return_config['var_file'] = var_file.replace('${path}', terraform_path)
+
     return_config['variables'] = variables
     return_config['terraform_path'] = terraform_path
 
@@ -154,7 +158,7 @@ def terraform_plan(context, path, target=[], aws_profile='default', output_file=
         opt_str += f'-var-file={config.get("var_file")} '
 
     for var_key, var_val in config.get('variables').items():
-        opt_str += f'-var \'{var_key}={var_val}\''
+        opt_str += f'-var \'{var_key}={var_val}\' '
 
     for resource in target:
         opt_str += f'-target {resource} '
