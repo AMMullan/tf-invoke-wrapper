@@ -24,12 +24,12 @@ Currently it supports the following Terraform features:
 By default, the configuration is stored in YAML, with the name **tasks.yaml** (JSON support forthcoming). The configuration is designed so that the more granular your path configuration is, the preference it gets parsed.
 
 ### Available configuration options
-option | description
------: | :----------
-assume_role_arn | The IAM Role to Assume
-backend_path | Path to the backend configuration file
-vars_file | Path to a variables file
-variables | A key/value dictionary
+option | type | description
+-----: | ---- | :----------
+assume_role_arn | `string` | The IAM Role to Assume
+backend_config | `string` OR `dict` | Path to the backend configuration file
+vars_file | `string` | Path to a variables file
+variables | `dict` | A key/value dictionary
 
 ### Sample YAML Config
 ```yaml
@@ -39,20 +39,25 @@ terraform:
 terraform/123456789012:
   assume_role_arn: 'arn:aws:iam::123456789012:role/terraform'
 terraform/123456789012/eu-west-1/production:
-  backend_path: '${path}/parameters/backend.tfvars'
+  backend_config: '${path}/parameters/backend.tfvars'
   vars_file: '${path}/parameters/production.tfvars'
 terraform/123456789012/eu-west-1/development:
   assume_role_arn: 'arn:aws:iam::123456789012:role/terraform-production'
-  backend_path: '${path}/parameters/backend.tfvars'
+  backend_config: '${path}/parameters/backend.tfvars'
   variables:
     my_key: my_value
 
 terraform/234567890123/my_app/:
   environments:
     production:
-        assume_role_arn: arn:aws:iam::234567890123:role/terraform-prod
-        vars_file: '${path}/parameters/production/production.tfvars'
-        backend_path: '${path}/parameters/production/backend.tfvars'
+      assume_role_arn: arn:aws:iam::234567890123:role/terraform-prod
+      vars_file: '${path}/parameters/production/production.tfvars'
+      backend_config:
+        bucket: "my_state_bucket"
+        region: "eu-west-1"
+        acl: "bucket-owner-full-control"
+        key: "my_state_file.tfstate"
+
 ```
 
 ## TODO
