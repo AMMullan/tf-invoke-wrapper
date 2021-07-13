@@ -100,10 +100,10 @@ def configure_task(context):
         return_config['assume_role_arn'] = assume_role_arn
 
     if backend_config:
-        return_config['backend_config'] = backend_config.replace('${path}', terraform_path)
+        return_config['backend_config'] = os.path.abspath(backend_config.replace('${path}', terraform_path))
 
     if var_file:
-        return_config['var_file'] = var_file.replace('${path}', terraform_path)
+        return_config['var_file'] = os.path.abspath(var_file.replace('${path}', terraform_path))
 
     return_config['variables'] = variables
     return_config['terraform_path'] = terraform_path
