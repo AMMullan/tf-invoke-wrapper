@@ -235,7 +235,7 @@ def terraform_apply(context, path, environment=None, target=[], aws_profile='def
         opt_str += f'-var-file={config.get("var_file")} '
 
     for var_key, var_val in config.get('variables').items():
-        opt_str += f'-var \'{var_key}={var_val}\''
+        opt_str += f'-var \'{var_key}={var_val}\' '
 
     if no_ask:
         opt_str += '-auto-approve '
