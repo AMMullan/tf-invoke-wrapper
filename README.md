@@ -51,11 +51,15 @@ terraform/234567890123/my_app/:
   environments:
     production:
         assume_role_arn: arn:aws:iam::234567890123:role/terraform-prod
-        parameters: '${path}/parameters/production/production.tfvars'
+        vars_file: '${path}/parameters/production/production.tfvars'
         backend_path: '${path}/parameters/production/backend.tfvars'
 ```
 
 ## TODO
 * Allow more than 1 variables file
+* Allow for backend_config to be a path, variables or both
 * Configure tflint / tfsec to be executed if found in $PATH (disabled by passing disable_tfsec: true in the YAML)
 * Allow quieter mode, maybe?
+
+## Notes
+* It is possible to have duplicate config by adding a path with a trailing slash and without, this is not recommended.
