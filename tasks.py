@@ -63,14 +63,24 @@ def configure_task(context):
         except Exception:
             exit_msg('Unable to process tasks.yaml', 1)
 
+    terraform_path = context.terraform_path.rstrip('/')
+
+    if config.get(terraform_path):
+        config_root = terraform_path
+    elif config.get(context.terraform_path):
+        config_root = context.terraform_path
+    elif config.get(context.terraform_path + '/'):
+        config_root = context.terraform_path + '/'
+    else:
+        exit_msg(f'Unable to find configuration for {context.terraform_path}', 1)
+
     return_config = {}
 
     if not os.path.isdir(context.terraform_path):
         exit_msg('Invalid Path Specified', 1)
 
-    terraform_path = context.terraform_path.rstrip('/')
     all_paths = [terraform_path] + [
-        str(path)
+        str(path).rstrip('/')
         for path in PurePosixPath(context.terraform_path).parents
         if str(path) != '.'
     ]
@@ -85,11 +95,40 @@ def configure_task(context):
         if not config.get(path):
             continue
 
-        assume_role_arn = config.get(path, {}).get('assume_role_arn', assume_role_arn)
-        backend_config = config.get(path, {}).get('backend_config', backend_config)
-        var_file = config.get(path, {}).get('var_file', var_file)
-        if isinstance(config.get(path, {}).get('variables'), dict):
-            variables.update(config.get(path, {}).get('variables', {}))
+        assume_role_arn = config.get(path).get('assume_role_arn', assume_role_arn)
+        backend_config = config.get(path).get('backend_config', backend_config)
+        var_file = config.get(path).get('var_file', var_file)
+        if isinstance(config.get(path).get('variables'), dict):
+            variables.update(config.get(path).get('variables', {}))
+
+    if context.environment:
+        envs_root = config.get(config_root).get('environments', {})
+        env_root = envs_root.get(context.environment)
+
+        if env_root:
+            assume_role_arn = env_root.get('assume_role_arn', assume_role_arn)
+            backend_config = env_root.get('backend_config', backend_config)
+            var_file = env_root.get('var_file', var_file)
+            if isinstance(env_root.get('variables'), dict):
+                variables.update(env_root.get('variables', {}))
+
+    if backend_config:
+        if isinstance(backend_config, str):
+            return_config['backend_config'] = os.path.abspath(
+                backend_config.replace('${path}', terraform_path)
+            )
+            if not os.path.isfile(return_config['backend_config']):
+                exit_msg('Invalid backend_config', 1)
+        elif isinstance(backend_config, dict):
+            return_config['backend_config'] = backend_config
+
+    if var_file:
+        return_config['var_file'] = os.path.abspath(
+            var_file.replace('${path}', terraform_path)
+        )
+
+        if not os.path.isfile(return_config['var_file']):
+            exit_msg('Invalid var_file', 1)
 
     if assume_role_arn:
         assume_client(
@@ -98,12 +137,6 @@ def configure_task(context):
             profile=context.aws_profile
         )
         return_config['assume_role_arn'] = assume_role_arn
-
-    if backend_config:
-        return_config['backend_config'] = os.path.abspath(backend_config.replace('${path}', terraform_path))
-
-    if var_file:
-        return_config['var_file'] = os.path.abspath(var_file.replace('${path}', terraform_path))
 
     return_config['variables'] = variables
     return_config['terraform_path'] = terraform_path
@@ -127,7 +160,11 @@ def terraform_init(context):
 
     opt_str = ""
     if config.get('backend_config'):
-        opt_str += f'-backend-config={config.get("backend_config")} '
+        if isinstance(config.get('backend_config'), str):
+            opt_str += f'-backend-config={config.get("backend_config")} '
+        else:
+            for key, value in config.get('backend_config').items():
+                opt_str += f'-backend-config="{key}={value}" '
 
     with context.cd(context.terraform_path):
         exec = context.run(f'terraform init -reconfigure -get=true {opt_str}')
@@ -145,10 +182,11 @@ def terraform_init(context):
         'output_file': 'Generate an output file for Terraform Plan'
     }
 )
-def terraform_plan(context, path, target=[], aws_profile='default', output_file=False):
+def terraform_plan(context, path, environment=None, target=[], aws_profile='default', output_file=False):
     """ Generate a speculative execution plan, showing what actions Terraform will take """
 
     context.setdefault('terraform_path', path)
+    context.setdefault('environment', environment)
     context.setdefault('aws_profile', aws_profile)
 
     config = terraform_init(context)
@@ -182,10 +220,11 @@ def terraform_plan(context, path, target=[], aws_profile='default', output_file=
         'no_ask': '(!) Do NOT ask for approval.'
     }
 )
-def terraform_apply(context, path, target=[], aws_profile='default', output_file=False, no_ask=False):
+def terraform_apply(context, path, environment=None, target=[], aws_profile='default', output_file=False, no_ask=False):
     """ Execute a Terraform Apply """
 
     context.setdefault('terraform_path', path.rstrip('/'))
+    context.setdefault('environment', environment)
     context.setdefault('aws_profile', aws_profile)
 
     config = terraform_init(context)
@@ -229,10 +268,11 @@ def terraform_apply(context, path, target=[], aws_profile='default', output_file
         'resource': 'One or more existing infrastructure resources. Format is [address]=[resource_id]'
     }
 )
-def terraform_import(context, path, resource, aws_profile='default'):
+def terraform_import(context, path, resource, environment=None, aws_profile='default'):
     """ Import existing infrastructure into Terraform state """
 
     context.setdefault('terraform_path', path)
+    context.setdefault('environment', environment)
     context.setdefault('aws_profile', aws_profile)
 
     config = terraform_init(context)
@@ -256,10 +296,11 @@ def terraform_import(context, path, resource, aws_profile='default'):
 @task(
     iterable=['resource']
 )
-def terraform_delete(context, path, resource, aws_profile='default'):
+def terraform_delete(context, path, resource, environment=None, aws_profile='default'):
     """ Remove resources from state """
 
     context.setdefault('terraform_path', path)
+    context.setdefault('environment', environment)
     context.setdefault('aws_profile', aws_profile)
 
     config = terraform_init(context)
@@ -278,10 +319,11 @@ def terraform_delete(context, path, resource, aws_profile='default'):
         'no_ask': '(!) Do NOT ask for approval.'
     }
 )
-def terraform_destroy(context, path, aws_profile='default', no_ask=False):
+def terraform_destroy(context, path, environment=None, aws_profile='default', no_ask=False):
     """ Destroy infrastructure from a Terraform path """
 
     context.setdefault('terraform_path', path)
+    context.setdefault('environment', environment)
     context.setdefault('aws_profile', aws_profile)
 
     config = terraform_init(context)
