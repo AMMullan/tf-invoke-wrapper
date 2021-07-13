@@ -163,7 +163,7 @@ def terraform_plan(context, path, target=[], aws_profile='default', output_file=
         opt_str += f'-out={plan_output_file} '
 
     with context.cd(config.get('terraform_path')):
-        context.run(f'terraform plan -refresh {opt_str}')
+        context.run(f'terraform plan -detailed-exitcode -refresh {opt_str}')
 
     clear_cache(context)
 
