@@ -343,6 +343,6 @@ def terraform_destroy(context, path, environment=None, aws_profile='default', no
 
     if no_ask or confirm:
         with context.cd(config.get('terraform_path')):
-            context.run('terraform destroy {opt_str}')
+            context.run(f'terraform destroy {opt_str}')
 
     clear_cache(context)
