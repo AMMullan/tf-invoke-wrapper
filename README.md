@@ -1,5 +1,6 @@
 
 
+
 # Python Invoke Terraform Wrapper
 
 When you're working in an environment that has lots of Terraform projects in one repo, or just want an easier way to call Terraform then this script can help simplify everything.
@@ -30,6 +31,24 @@ assume_role_arn | `string` | The IAM Role to Assume
 backend_config | `string` OR `dict` | Path to the backend configuration file
 vars_file | `string` | Path to a variables file
 variables | `dict` | A key/value dictionary
+
+### YAML Configuration Syntax
+```yaml
+[path_to_terraform]:
+  assume_role_arn: [role_arn]
+  backend_config: [backend_config_file]
+  backend_config:
+    bucket: [bucket_name]
+    region: [bucket_region]
+    acl: [bucket_acl]
+    key: [path_to_state_in_s3]
+  vars_file: [path_to_tfvars_file]
+  variables:
+    [var_key]: [var_value]
+```
+#### Notes
+* [path_to_terraform] - at present must be a relative or absolute path, doesn't CURRENTLY support using tildes. This path must currently match to exactly how you put it in the CLI (though trailing slashes are ignored).
+* If passing a dictionary to the backend_config key you need to pass the **bucket**, **region**, **acl** and **key** keys, otherwise Terraform won't work.
 
 ### Sample YAML Config
 ```yaml
