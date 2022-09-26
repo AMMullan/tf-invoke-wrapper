@@ -179,11 +179,12 @@ def terraform_init(context):
         'path': 'Folder containing Terraform source',
         'aws_profile': 'AWS CLI profile - will use  \'default\' profile by default',
         'target': 'Terraform Resource(s) to Target - pass multiple times to target multiple resources',
-        'output_file': 'Generate an output file for Terraform Plan'
+        'output_file': 'Generate an output file for Terraform Plan',
+        'destroy': "Speculative destroy plan"
     }
 )
-def terraform_plan(context, path, environment=None, target=[], aws_profile='default', output_file=False):
-    """ Generate a speculative execution plan, showing what actions Terraform will take """
+def terraform_plan(context, path, environment=None, target=[], aws_profile='default', output_file=False, destroy=False):
+    """ Generate a speculative execution or destroy plan, showing what actions Terraform will take """
 
     context.setdefault('terraform_path', path)
     context.setdefault('environment', environment)
@@ -203,6 +204,9 @@ def terraform_plan(context, path, environment=None, target=[], aws_profile='defa
 
     if output_file:
         opt_str += f'-out={plan_output_file} '
+
+    if destroy:
+        opt_str += f'-destroy '
 
     with context.cd(config.get('terraform_path')):
         context.run(f'terraform plan -detailed-exitcode -refresh {opt_str}')
